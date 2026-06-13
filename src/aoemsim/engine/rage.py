@@ -34,14 +34,16 @@ def should_interrupt_cast(state: TroopState) -> Skill | None:
 
 
 def cast_commander_interrupt(
-    attacker: TroopState, defender: TroopState, skill: Skill, rng: RngService
+    attacker: "TroopState", defender: "TroopState", skill: Skill, rng: RngService
 ) -> None:
     """Cast the commander skill and reset rage."""
     # Record the cast event for determinism
     rng.random(source=f"cast_skill_{skill.id}")
 
-    # Logic for effects would go here in M3-002+ (Out of scope for M3-001)
-    # For M3-001, we just need to ensure the cast happens and rage is reset.
+    # Execute each effect in the skill configuration (M4-002)
+    from aoemsim.effects.registry import registry
+    for effect in skill.effects:
+        registry.execute(attacker, defender, effect, rng)
 
     # Reset rage without overflow: attacker.rage -= skill.rage_cost
     # Acceptance Criteria says: "rage di-reset sesuai aturan tanpa overflow"
