@@ -1,5 +1,6 @@
 """Rage accumulation and commander skill interrupt logic."""
 
+from aoemsim.engine.cc import is_silenced
 from aoemsim.engine.rng import RngService
 from aoemsim.engine.state import TroopState
 from aoemsim.models.enums import StatKind
@@ -19,6 +20,9 @@ def update_rage(state: TroopState, tick_sec: float) -> None:
 
 def should_interrupt_cast(state: TroopState) -> Skill | None:
     """Check if the commander skill should be cast as an interrupt."""
+    if is_silenced(state):
+        return None
+
     skill = state.commander_skill
     if not skill or skill.rage_cost is None:
         return None

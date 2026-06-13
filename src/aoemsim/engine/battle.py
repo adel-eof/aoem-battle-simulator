@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 
+from aoemsim.engine.cc import is_disarmed, update_cc_timers
 from aoemsim.engine.rage import cast_commander_interrupt, should_interrupt_cast, update_rage
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
@@ -131,9 +132,22 @@ class BattleEngine:
         self, tick: int, attacker: TroopState, defender: TroopState, rng: RngService
     ) -> None:
         """Process a single tick of battle. Can be overridden for testing or specific logic."""
-        # 1. Update Rage (M3-001)
+        # 1. Update CC and Immunity Timers (M3-003)
+        immunity_ticks = int(3.0 / self.tick_sec)
+        update_cc_timers(attacker, immunity_ticks)
+        update_cc_timers(defender, immunity_ticks)
+
+        # 2. Update Rage (M3-001)
         update_rage(attacker, self.tick_sec)
         update_rage(defender, self.tick_sec)
+
+        # 3. Normal Attack Phase (Guard only for M3-003)
+        if not is_disarmed(attacker):
+            # [TBD: Normal attack implementation in future milestone]
+            pass
+        if not is_disarmed(defender):
+            # [TBD: Normal attack implementation in future milestone]
+            pass
 
         # Record a dummy RNG roll to verify determinism in tests
         rng.random(source="tick_start")

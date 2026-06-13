@@ -61,3 +61,11 @@ class StatKind(StrEnum):
     CRIT_DAMAGE = "crit_damage"
     MAX_RAGE = "max_rage"
     RAGE_REGEN = "rage_regen"
+
+
+class CcType(StrEnum):
+    """Types of Crowd Control."""
+
+    SILENCE = "silence"
+    DISARM = "disarm"
+    INCAPACITATION = "incapacitation"

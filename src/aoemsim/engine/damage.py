@@ -11,6 +11,7 @@ from aoemsim.config import (
     SKILL_STAT_TO_EFFECT_RATE,
     STAT_TO_MODIFIER_RATE,
 )
+from aoemsim.engine.cc import is_incapacitated
 from aoemsim.engine.rng import RngService
 from aoemsim.engine.state import TroopState
 from aoemsim.models.enums import StatKind, UnitType
@@ -93,6 +94,9 @@ def resolve_damage(
     Integrates armor, counter, variance, and troop scaling.
     Returns the integer troop loss.
     """
+    if is_incapacitated(attacker):
+        return 0
+
     params = effect.params
     base_rate = float(params.get("rate", 0.0))
 
