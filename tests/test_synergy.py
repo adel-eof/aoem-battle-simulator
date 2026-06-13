@@ -102,13 +102,17 @@ class CaptureStateBattleEngine(BattleEngine):
         from aoemsim.engine.state import TroopState
 
         self.captured_attacker_state = TroopState(
+            lineup=self.attacker_lineup,
             hp=self.attacker_lineup.troop.total_hp,
             max_hp=self.attacker_lineup.troop.total_hp,
+            unit_type=self.attacker_lineup.troop.unit_type,
             synergy_bonus=attacker_synergy,
         )
         self.captured_defender_state = TroopState(
+            lineup=self.defender_lineup,
             hp=self.defender_lineup.troop.total_hp,
             max_hp=self.defender_lineup.troop.total_hp,
+            unit_type=self.defender_lineup.troop.unit_type,
             synergy_bonus=defender_synergy,
         )
         return super().run(seed)
