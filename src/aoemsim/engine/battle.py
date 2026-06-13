@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from aoemsim.engine.cc import is_disarmed, update_cc_timers
 from aoemsim.engine.events import EventBus, EventPayload, EventType
+from aoemsim.engine.prd import PrdEngine
 from aoemsim.engine.rage import cast_commander_interrupt, should_interrupt_cast, update_rage
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
@@ -45,6 +46,7 @@ class BattleEngine:
         self.max_duration_sec = max_duration_sec
         self.tick_sec = tick_sec
         self.event_bus = EventBus()
+        self.prd_engine = PrdEngine()
 
     def run(self, seed: int) -> BattleResult:
         """Run the battle simulation from start to finish using the given seed."""
