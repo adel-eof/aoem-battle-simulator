@@ -7,6 +7,7 @@ from aoemsim.models.enums import StatKind, UnitType
 
 if TYPE_CHECKING:
     from aoemsim.models.lineup import Lineup
+    from aoemsim.models.skill import Skill
 
 
 @dataclass
@@ -17,6 +18,7 @@ class TroopState:
     hp: float
     max_hp: float
     unit_type: UnitType
+    commander_skill: "Skill | None" = None
     stats_cache: dict[StatKind, float] = field(default_factory=dict)
     synergy_bonus: float = 0.0
     rage: float = 0.0
