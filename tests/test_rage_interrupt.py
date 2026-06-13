@@ -126,13 +126,13 @@ def test_battle_engine_integration(sample_hero, sample_lineup):
     # 2.0s -> 3.0s: Rage reaches 100. Not enough for second cast.
     assert len(cast_events) == 2  # Wait, 2 lineages. Attacker and Defender.
     # So 1 cast per side.
-    
+
     # If it was 5 seconds:
     # 0 -> 2.0s: Cast
     # 2.0s -> 4.0s: Cast
     # 4.0s -> 5.0s: Rage 100.
     # So 2 casts per side.
-    
+
     engine_5s = BattleEngine(
         attacker_lineup=sample_lineup,
         defender_lineup=sample_lineup,
