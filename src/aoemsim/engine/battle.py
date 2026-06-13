@@ -1,6 +1,5 @@
 """Deterministic battle engine for AOEM Battle Simulator."""
 
-
 from pydantic import BaseModel
 
 from aoemsim.engine.rage import cast_commander_interrupt, should_interrupt_cast, update_rage

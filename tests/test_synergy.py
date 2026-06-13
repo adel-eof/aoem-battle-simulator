@@ -59,8 +59,7 @@ def test_resolve_military_bonus(specialties, expected_bonus):
 def test_resolve_unit_type_bonus(hero_unit_types, troop_unit_type, expected_bonus):
     """Test unit type specialty bonus calculation."""
     heroes = [
-        create_mock_hero(f"h{i}", Military.WARRIOR, ut)
-        for i, ut in enumerate(hero_unit_types)
+        create_mock_hero(f"h{i}", Military.WARRIOR, ut) for i, ut in enumerate(hero_unit_types)
     ]
     assert resolve_unit_type_bonus(heroes, troop_unit_type) == pytest.approx(expected_bonus)
 

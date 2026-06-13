@@ -104,9 +104,7 @@ def resolve_damage(
 
     # 2. Effective Attack Stat
     eff_atk_stat_val = attacker.stats_cache.get(attack_kind, 0.0)
-    attack_stat = compute_attack_stat(
-        attacker.lineup.troop.unit_base_attack, eff_atk_stat_val
-    )
+    attack_stat = compute_attack_stat(attacker.lineup.troop.unit_base_attack, eff_atk_stat_val)
 
     # 3. Apply Skill Rate Bonus (Section 2.4)
     skill_rate = base_rate
@@ -130,9 +128,7 @@ def resolve_damage(
     damage *= compute_counter_multiplier(attacker.unit_type, defender.unit_type)
 
     # 7. Critical Hit
-    damage = compute_crit(
-        damage, attacker, rng, is_normal_attack, params.get("can_crit", False)
-    )
+    damage = compute_crit(damage, attacker, rng, is_normal_attack, params.get("can_crit", False))
 
     # 8. Troop Scaling
     # damage menurun seiring hilangnya jumlah pasukan (current / max)
