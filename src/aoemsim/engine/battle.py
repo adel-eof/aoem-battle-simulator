@@ -3,12 +3,14 @@
 
 from pydantic import BaseModel
 
+from aoemsim.engine.rage import cast_commander_interrupt, should_interrupt_cast, update_rage
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
 from aoemsim.engine.synergy import apply_synergy_to_stats
-from aoemsim.models.enums import StatKind
+from aoemsim.models.enums import SkillSlot, StatKind
 from aoemsim.models.hero import Hero
 from aoemsim.models.lineup import Lineup
+from aoemsim.models.skill import Skill
 
 
 class BattleResult(BaseModel):
@@ -60,6 +62,9 @@ class BattleEngine:
             hp=self.attacker_lineup.troop.total_hp,
             max_hp=self.attacker_lineup.troop.total_hp,
             unit_type=self.attacker_lineup.troop.unit_type,
+            commander_skill=self._find_commander_skill(
+                self.attacker_heroes, self.attacker_lineup.commander_id
+            ),
             synergy_bonus=attacker_synergy,
             stats_cache=self._prepare_stats_cache(self.attacker_heroes, attacker_synergy),
         )
@@ -68,6 +73,9 @@ class BattleEngine:
             hp=self.defender_lineup.troop.total_hp,
             max_hp=self.defender_lineup.troop.total_hp,
             unit_type=self.defender_lineup.troop.unit_type,
+            commander_skill=self._find_commander_skill(
+                self.defender_heroes, self.defender_lineup.commander_id
+            ),
             synergy_bonus=defender_synergy,
             stats_cache=self._prepare_stats_cache(self.defender_heroes, defender_synergy),
         )
@@ -91,7 +99,10 @@ class BattleEngine:
                 winner = self.defender_lineup.name
                 break
 
-            # 2. Tick Logic (Placeholder for M2-001)
+            # 2. Interrupt Phase (M3-001)
+            self._process_interrupts(attacker_state, defender_state, rng)
+
+            # 3. Tick Logic (Placeholder for M2-001)
             self._process_tick(tick, attacker_state, defender_state, rng)
 
             tick += 1
@@ -121,8 +132,31 @@ class BattleEngine:
         self, tick: int, attacker: TroopState, defender: TroopState, rng: RngService
     ) -> None:
         """Process a single tick of battle. Can be overridden for testing or specific logic."""
+        # 1. Update Rage (M3-001)
+        update_rage(attacker, self.tick_sec)
+        update_rage(defender, self.tick_sec)
+
         # Record a dummy RNG roll to verify determinism in tests
         rng.random(source="tick_start")
+
+    def _process_interrupts(
+        self, attacker: TroopState, defender: TroopState, rng: RngService
+    ) -> None:
+        """Process priority interrupt actions like commander skills."""
+        # Check attacker
+        if skill := should_interrupt_cast(attacker):
+            cast_commander_interrupt(attacker, defender, skill, rng)
+
+        # Check defender
+        if skill := should_interrupt_cast(defender):
+            cast_commander_interrupt(defender, attacker, skill, rng)
+
+    def _find_commander_skill(self, heroes: list[Hero], commander_id: str) -> Skill | None:
+        """Find the commander skill for the designated commander hero."""
+        for hero in heroes:
+            if hero.id == commander_id:
+                return hero.skills.get(SkillSlot.COMMANDER)
+        return None
 
     def _prepare_stats_cache(
         self, heroes: list[Hero], synergy_bonus: float
