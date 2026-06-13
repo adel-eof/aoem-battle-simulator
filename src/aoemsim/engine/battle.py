@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
 from aoemsim.engine.synergy import apply_synergy_to_stats
+from aoemsim.models.enums import StatKind
 from aoemsim.models.hero import Hero
 from aoemsim.models.lineup import Lineup
 
@@ -55,14 +56,20 @@ class BattleEngine:
 
         # Initialize runtime state
         attacker_state = TroopState(
+            lineup=self.attacker_lineup,
             hp=self.attacker_lineup.troop.total_hp,
             max_hp=self.attacker_lineup.troop.total_hp,
+            unit_type=self.attacker_lineup.troop.unit_type,
             synergy_bonus=attacker_synergy,
+            stats_cache=self._prepare_stats_cache(self.attacker_heroes, attacker_synergy),
         )
         defender_state = TroopState(
+            lineup=self.defender_lineup,
             hp=self.defender_lineup.troop.total_hp,
             max_hp=self.defender_lineup.troop.total_hp,
+            unit_type=self.defender_lineup.troop.unit_type,
             synergy_bonus=defender_synergy,
+            stats_cache=self._prepare_stats_cache(self.defender_heroes, defender_synergy),
         )
 
         tick = 0
@@ -116,3 +123,19 @@ class BattleEngine:
         """Process a single tick of battle. Can be overridden for testing or specific logic."""
         # Record a dummy RNG roll to verify determinism in tests
         rng.random(source="tick_start")
+
+    def _prepare_stats_cache(
+        self, heroes: list[Hero], synergy_bonus: float
+    ) -> dict[StatKind, float]:
+        """Aggregate stats from all heroes and apply synergy bonus."""
+        stats: dict[StatKind, float] = {}
+
+        # Initialize base stats that must exist
+        for kind in StatKind:
+            total_val = 0.0
+            for hero in heroes:
+                if kind in hero.attributes:
+                    total_val += hero.stat(kind)
+            stats[kind] = total_val * (1 + synergy_bonus)
+
+        return stats

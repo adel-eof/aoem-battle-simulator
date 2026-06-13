@@ -1,14 +1,23 @@
 """Runtime state for battle simulation."""
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+from aoemsim.models.enums import StatKind, UnitType
+
+if TYPE_CHECKING:
+    from aoemsim.models.lineup import Lineup
 
 
 @dataclass
 class TroopState:
     """Runtime state of a troop in battle."""
 
+    lineup: "Lineup"
     hp: float
     max_hp: float
+    unit_type: UnitType
+    stats_cache: dict[StatKind, float] = field(default_factory=dict)
     synergy_bonus: float = 0.0
     rage: float = 0.0
     effects: list[str] = field(default_factory=list)
