@@ -9,6 +9,7 @@ class TroopState:
 
     hp: float
     max_hp: float
+    synergy_bonus: float = 0.0
     rage: float = 0.0
     effects: list[str] = field(default_factory=list)
     cooldowns: dict[str, float] = field(default_factory=dict)

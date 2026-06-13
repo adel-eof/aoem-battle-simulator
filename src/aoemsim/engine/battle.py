@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
+from aoemsim.engine.synergy import apply_synergy_to_stats
+from aoemsim.models.hero import Hero
 from aoemsim.models.lineup import Lineup
 
 
@@ -27,11 +29,15 @@ class BattleEngine:
         self,
         attacker_lineup: Lineup,
         defender_lineup: Lineup,
+        attacker_heroes: list[Hero] | None = None,
+        defender_heroes: list[Hero] | None = None,
         max_duration_sec: float = 90.0,
         tick_sec: float = 0.1,
     ):
         self.attacker_lineup = attacker_lineup
         self.defender_lineup = defender_lineup
+        self.attacker_heroes = attacker_heroes or []
+        self.defender_heroes = defender_heroes or []
         self.max_duration_sec = max_duration_sec
         self.tick_sec = tick_sec
 
@@ -39,14 +45,24 @@ class BattleEngine:
         """Run the battle simulation from start to finish using the given seed."""
         rng = RngService(seed)
 
+        # Calculate initial synergy bonuses
+        attacker_synergy = apply_synergy_to_stats(
+            self.attacker_heroes, self.attacker_lineup.troop.unit_type
+        )
+        defender_synergy = apply_synergy_to_stats(
+            self.defender_heroes, self.defender_lineup.troop.unit_type
+        )
+
         # Initialize runtime state
         attacker_state = TroopState(
             hp=self.attacker_lineup.troop.total_hp,
             max_hp=self.attacker_lineup.troop.total_hp,
+            synergy_bonus=attacker_synergy,
         )
         defender_state = TroopState(
             hp=self.defender_lineup.troop.total_hp,
             max_hp=self.defender_lineup.troop.total_hp,
+            synergy_bonus=defender_synergy,
         )
 
         tick = 0
