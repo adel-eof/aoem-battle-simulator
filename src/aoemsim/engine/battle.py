@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 
 from aoemsim.engine.cc import is_disarmed, update_cc_timers
+from aoemsim.engine.events import EventBus, EventPayload, EventType
 from aoemsim.engine.rage import cast_commander_interrupt, should_interrupt_cast, update_rage
 from aoemsim.engine.rng import RngRollEvent, RngService
 from aoemsim.engine.state import TroopState
@@ -43,6 +44,7 @@ class BattleEngine:
         self.defender_heroes = defender_heroes or []
         self.max_duration_sec = max_duration_sec
         self.tick_sec = tick_sec
+        self.event_bus = EventBus()
 
     def run(self, seed: int) -> BattleResult:
         """Run the battle simulation from start to finish using the given seed."""
@@ -85,6 +87,12 @@ class BattleEngine:
         finish_reason = "timeout"
         winner = None
 
+        # Publish Battle Start (M4-001)
+        self.event_bus.publish(
+            EventType.BATTLE_START,
+            EventPayload(tick=tick, attacker=attacker_state, defender=defender_state),
+        )
+
         while tick < max_ticks:
             # 1. Termination checks
             if attacker_state.hp <= 0 and defender_state.hp <= 0:
@@ -118,6 +126,17 @@ class BattleEngine:
                 finish_reason = "defeat"
                 winner = self.defender_lineup.name
 
+        # Publish Battle End (M4-001)
+        self.event_bus.publish(
+            EventType.BATTLE_END,
+            EventPayload(
+                tick=tick,
+                attacker=attacker_state,
+                defender=defender_state,
+                data={"winner": winner, "reason": finish_reason},
+            ),
+        )
+
         return BattleResult(
             winner=winner,
             duration_ticks=tick,
@@ -132,6 +151,11 @@ class BattleEngine:
         self, tick: int, attacker: TroopState, defender: TroopState, rng: RngService
     ) -> None:
         """Process a single tick of battle. Can be overridden for testing or specific logic."""
+        # Publish Tick Event (M4-001)
+        self.event_bus.publish(
+            EventType.TICK, EventPayload(tick=tick, attacker=attacker, defender=defender)
+        )
+
         # 1. Update CC and Immunity Timers (M3-003)
         immunity_ticks = int(3.0 / self.tick_sec)
         update_cc_timers(attacker, immunity_ticks)
@@ -143,9 +167,19 @@ class BattleEngine:
 
         # 3. Normal Attack Phase (Guard only for M3-003)
         if not is_disarmed(attacker):
+            # Publish Normal Attack Event (M4-001)
+            self.event_bus.publish(
+                EventType.NORMAL_ATTACK,
+                EventPayload(tick=tick, attacker=attacker, defender=defender),
+            )
             # [TBD: Normal attack implementation in future milestone]
             pass
         if not is_disarmed(defender):
+            # Publish Normal Attack Event (M4-001)
+            self.event_bus.publish(
+                EventType.NORMAL_ATTACK,
+                EventPayload(tick=tick, attacker=defender, defender=attacker),
+            )
             # [TBD: Normal attack implementation in future milestone]
             pass
 
@@ -158,10 +192,30 @@ class BattleEngine:
         """Process priority interrupt actions like commander skills."""
         # Check attacker
         if skill := should_interrupt_cast(attacker):
+            # Publish Skill Cast Event (M4-001)
+            self.event_bus.publish(
+                EventType.SKILL_CAST,
+                EventPayload(
+                    tick=0,  # Placeholder, will need real tick in future
+                    attacker=attacker,
+                    defender=defender,
+                    data={"skill_id": skill.id, "slot": "commander"},
+                ),
+            )
             cast_commander_interrupt(attacker, defender, skill, rng)
 
         # Check defender
         if skill := should_interrupt_cast(defender):
+            # Publish Skill Cast Event (M4-001)
+            self.event_bus.publish(
+                EventType.SKILL_CAST,
+                EventPayload(
+                    tick=0,  # Placeholder, will need real tick in future
+                    attacker=defender,
+                    defender=attacker,
+                    data={"skill_id": skill.id, "slot": "commander"},
+                ),
+            )
             cast_commander_interrupt(defender, attacker, skill, rng)
 
     def _find_commander_skill(self, heroes: list[Hero], commander_id: str) -> Skill | None:
